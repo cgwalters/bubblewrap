@@ -45,3 +45,11 @@ AC_CONFIG_FILES([
 Makefile
 ])
 AC_OUTPUT
+
+echo "
+    bubblewrap $VERSION
+    ===================
+
+    man pages (xsltproc):                         $enable_man
+    mysteriously satisfying to pop:               yes"
+echo ""
