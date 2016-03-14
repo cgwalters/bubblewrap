@@ -23,14 +23,15 @@ AC_ARG_ENABLE(man,
               enable_man=maybe)
 
 AS_IF([test "$enable_man" != no], [
-  AC_PATH_PROG([XSLTPROC], [xsltproc])
+  AC_PATH_PROG([XSLTPROC], [xsltproc], [])
   AS_IF([test -z "$XSLTPROC"], [
     AS_IF([test "$enable_man" = yes], [
       AC_MSG_ERROR([xsltproc is required for --enable-man])
     ])
     enable_man=no
+  ], [
+    enable_man=yes
   ])
-  enable_man=yes
 ])
 AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" != no)
 
