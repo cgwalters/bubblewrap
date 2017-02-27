@@ -116,6 +116,8 @@ char *label_mount (const char *opt,
 int   label_exec (const char *exec_label);
 int   label_create_file (const char *file_label);
 
+int signal_from_string (const char *s);
+
 static inline void
 cleanup_freep (void *p)
 {

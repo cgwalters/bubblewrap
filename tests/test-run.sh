@@ -105,24 +105,28 @@ sys.exit(0)
 EOF
 chmod a+x lockf-n.py
 touch lock
-/bin/bash -c "$RUN --die-with-parent --lock-file $(pwd)/lock sleep 1h" &
-childshellpid=$!
 
-# Wait for lock to be taken (yes hacky)
-for x in $(seq 10); do
+for die_with_parent_argv in "--die-with-parent SIGTERM" "--die-with-parent SIGKILL --unshare-pid" "--die-with-parent 9 --unshare-pid"; do
+    /bin/bash -c "$RUN --die-with-parent 9 ${die_with_parent_argv} --lock-file $(pwd)/lock sleep 1h" &
+    childshellpid=$!
+
+    # Wait for lock to be taken (yes hacky)
+    for x in $(seq 10); do
+        if ./lockf-n.py ./lock nowait; then
+            sleep 1
+        else
+            break
+        fi
+    done
     if ./lockf-n.py ./lock nowait; then
-        sleep 1
-    else
-        break
+        assert_not_reached "timed out waiting for lock"
     fi
-done
-if ./lockf-n.py ./lock nowait; then
-    assert_not_reached "timed out waiting for lock"
-fi
 
-# Kill the shell, which should kill bwrap (and the sleep)
-kill -9 ${childshellpid}
-# Lock file should be unlocked
-./lockf-n.py ./lock wait
+    # Kill the shell, which should kill bwrap (and the sleep)
+    kill -9 ${childshellpid}
+    # Lock file should be unlocked
+    ./lockf-n.py ./lock wait
+    echo "ok die with parent ${die_with_parent_argv}"
+done
 
 echo OK

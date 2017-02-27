@@ -65,7 +65,7 @@ bool opt_unshare_cgroup = FALSE;
 bool opt_unshare_cgroup_try = FALSE;
 bool opt_needs_devpts = FALSE;
 bool opt_new_session = FALSE;
-bool opt_die_with_parent = FALSE;
+int opt_die_with_parent = -1;
 uid_t opt_sandbox_uid = -1;
 gid_t opt_sandbox_gid = -1;
 int opt_sync_fd = -1;
@@ -218,7 +218,7 @@ usage (int ecode, FILE *out)
            "    --block-fd FD                Block on FD until some data to read is available\n"
            "    --info-fd FD                 Write information about the running container to FD\n"
            "    --new-session                Create a new terminal session\n"
-           "    --die-with-parent            Kills (SIGKILL) child process (COMMAND) when bwrap or bwrap's parent dies.\n"
+           "    --die-with-parent SIGNUM     Kills with SIGBUM child process (COMMAND) when bwrap or bwrap's parent dies.\n"
           );
   exit (ecode);
 }
@@ -229,7 +229,7 @@ usage (int ecode, FILE *out)
 static void
 handle_die_with_parent (void)
 {
-  if (opt_die_with_parent && prctl (PR_SET_PDEATHSIG, SIGKILL, 0, 0, 0) != 0)
+  if (opt_die_with_parent != -1 && prctl (PR_SET_PDEATHSIG, opt_die_with_parent, 0, 0, 0) != 0)
     die_with_error ("prctl");
 }
 
@@ -1632,7 +1632,23 @@ parse_args_recurse (int    *argcp,
         }
       else if (strcmp (arg, "--die-with-parent") == 0)
         {
-          opt_die_with_parent = TRUE;
+          const char *value;
+          char *endptr;
+
+          if (argc < 2)
+            die ("--die-with-parent takes an argument");
+          value = argv[1];
+
+          opt_die_with_parent = signal_from_string (value);
+          if (opt_die_with_parent == -1)
+            {
+              opt_die_with_parent = strtol (value, &endptr, 10);
+              if (value[0] == 0 || endptr[0] != 0 || opt_die_with_parent < 1 || opt_die_with_parent >= _NSIG)
+                die ("Invalid --die-with-parent: %s", value);
+            }
+
+          argv += 1;
+          argc -= 1;
         }
       else if (*arg == '-')
         {

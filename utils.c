@@ -19,6 +19,7 @@
 
 #include "utils.h"
 #include <sys/syscall.h>
+#include <sys/signal.h>
 #ifdef HAVE_SELINUX
 #include <selinux/selinux.h>
 #endif
@@ -706,4 +707,26 @@ label_exec (const char *exec_label)
     return setexeccon ((security_context_t) exec_label);
 #endif
   return 0;
+}
+
+/* Originally I was going to take the code from
+ * src/basic/signal-util.c but that expoded into a lot of code
+ * due to dependencies on lots of the libsystemd-internal bits.
+ * Let's just do this for now since I don't think anyone will
+ * need to send SIGPWR or whatever to child processes.
+ */
+int
+signal_from_string (const char *s)
+{
+  if (strncmp (s, "SIG", 3) == 0)
+    s += strlen ("SIG");
+
+#define LOOKUP(TERM) if (strcmp (s, "" # TERM) == 0) return SIG ## TERM
+  LOOKUP(KILL);
+  LOOKUP(HUP);
+  LOOKUP(INT);
+  LOOKUP(TERM);
+#undef LOOKUP
+
+  return -1;
 }
