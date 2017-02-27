@@ -107,7 +107,7 @@ chmod a+x lockf-n.py
 touch lock
 
 for die_with_parent_argv in "--die-with-parent SIGTERM" "--die-with-parent SIGKILL --unshare-pid" "--die-with-parent 9 --unshare-pid"; do
-    /bin/bash -c "$RUN --die-with-parent 9 ${die_with_parent_argv} --lock-file $(pwd)/lock sleep 1h" &
+    /bin/bash -c "$RUN ${die_with_parent_argv} --lock-file $(pwd)/lock sleep 1h && true" &
     childshellpid=$!
 
     # Wait for lock to be taken (yes hacky)
